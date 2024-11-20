@@ -10,50 +10,60 @@ import unicodedata
 import logging
 from sklearn.preprocessing import MinMaxScaler
 
+
+start_ia = False
 app = Flask(__name__)
 
 # Configurar o logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
+if start_ia:
 # Carregar os modelos treinados e os scalers
-try:
-    with open('energia_eolica_model.pkl', 'rb') as file:
-        energia_eolica_model = pickle.load(file)
-    logger.info("Modelo treinado carregado com sucesso.")
-except FileNotFoundError:
-    logger.error("Arquivo 'energia_eolica_model.pkl' não encontrado.")
-    energia_eolica_model = None
-except Exception as e:
-    logger.error(f"Erro ao carregar 'energia_eolica_model.pkl': {e}")
-    energia_eolica_model = None
+    try:
+        with open('energia_eolica_model.pkl', 'rb') as file:
+            energia_eolica_model = pickle.load(file)
+        logger.info("Modelo treinado carregado com sucesso.")
+    except FileNotFoundError:
+        logger.error("Arquivo 'energia_eolica_model.pkl' não encontrado.")
+        energia_eolica_model = None
+    except Exception as e:
+        logger.error(f"Erro ao carregar 'energia_eolica_model.pkl': {e}")
+        energia_eolica_model = None
 
-try:
-    with open('scaler_eolica.pkl', 'rb') as file:
-        scaler = pickle.load(file)
-    logger.info("Scaler carregado com sucesso.")
-except FileNotFoundError:
-    logger.error("Arquivo 'scaler_eolica.pkl' não encontrado.")
-    scaler = None
-except Exception as e:
-    logger.error(f"Erro ao carregar 'scaler_eolica.pkl': {e}")
-    scaler = None
+    try:
+        with open('scaler_eolica.pkl', 'rb') as file:
+            scaler = pickle.load(file)
+        logger.info("Scaler carregado com sucesso.")
+    except FileNotFoundError:
+        logger.error("Arquivo 'scaler_eolica.pkl' não encontrado.")
+        scaler = None
+    except Exception as e:
+        logger.error(f"Erro ao carregar 'scaler_eolica.pkl': {e}")
+        scaler = None
 
-try:
-    with open('scaler_y.pkl', 'rb') as file:
-        scaler_y = pickle.load(file)
-    logger.info("Scaler para y carregado com sucesso.")
-except FileNotFoundError:
-    logger.error("Arquivo 'scaler_y.pkl' não encontrado.")
-    scaler_y = None
-except Exception as e:
-    logger.error(f"Erro ao carregar 'scaler_y.pkl': {e}")
-    scaler_y = None
+    try:
+        with open('scaler_y.pkl', 'rb') as file:
+            scaler_y = pickle.load(file)
+        logger.info("Scaler para y carregado com sucesso.")
+    except FileNotFoundError:
+        logger.error("Arquivo 'scaler_y.pkl' não encontrado.")
+        scaler_y = None
+    except Exception as e:
+        logger.error(f"Erro ao carregar 'scaler_y.pkl': {e}")
+        scaler_y = None
 
-# Verificar se todos os componentes foram carregados corretamente
-if not energia_eolica_model or not scaler or not scaler_y:
-    logger.error("Modelo ou scalers não carregados corretamente.")
-    # Dependendo do caso, você pode querer encerrar a aplicação ou lidar com isso de outra forma
+
+    try:
+        with open('modelo_solar.pkl', 'rb') as file:
+            solar_prediction_model = pickle.load(file)
+    except FileNotFoundError:
+        logger.error("Arquivo 'modelo_solar.pkl' não encontrado.")    
+
+
+    # Verificar se todos os componentes foram carregados corretamente
+    if not energia_eolica_model or not scaler or not scaler_y:
+        logger.error("Modelo ou scalers não carregados corretamente.")
+        # Dependendo do caso, você pode querer encerrar a aplicação ou lidar com isso de outra forma
 
 # Definir os nomes das features utilizadas no treinamento do modelo eólico
 feature_names = [
@@ -209,6 +219,10 @@ def get_endereco(id_sitio):
     finally:
         connection.close()
 
+
+
+
+
 # Função para estimar condições de vento
 def estimate_wind_conditions(cidade: str, estado: str) -> dict:
     resposta = latLotCidade(nomeCidade=cidade, estado=estado)
@@ -254,6 +268,34 @@ def estimate_wind_conditions(cidade: str, estado: str) -> dict:
         'winddirection_100m': wind_direction_100m,
         'windgusts_10m': wind_gusts_10m_max
     }
+
+def somar_capacidade_usina(id_sitio : int):
+    sql = "select SUM(potencia) from t_gl_aparelho_gerador where id_sitio = :id_sitio"
+    with get_connection() as con:
+        with con.cursor() as cur:
+            cur.execute(
+                        "select SUM(potencia) from t_gl_aparelho_gerador where id_sitio = :id_sitio", 
+                        {"id_sitio": id_sitio}
+                    )
+            result = cur.fetchone()
+            if not result:
+                logger.error(f"capacidade da usina no sítio {id_sitio} não encontrada.")
+                return {"error": "id_endereco não encontrado"}, 404
+    return result
+
+
+
+@app.route('/predict-solar/<int:id_sitio>', methods=['POST'])
+def prever_solar_sitio(id_sitio: int):
+    from energia_solar2 import predict_solar_daily_energy
+    cidade, uf =  get_endereco(id_sitio=id_sitio)
+    estado = uf_estado(uf)
+
+    resultado = predict_solar_daily_energy(cidade=cidade, estado=estado, usina_capacidade=somar_capacidade_usina(id_sitio))
+   
+    # Retornar a previsão como JSON
+    return jsonify({'energia_diaria_estimada': resultado})
+
 
 @app.route('/predict-eolic/<int:id_sitio>', methods=['GET'])
 def prever_eolica_sitio(id_sitio: int):
@@ -412,4 +454,5 @@ def teste_cidade():
     return jsonify(resultado)
 
 if __name__ == '__main__':
+    start_ia = True
     app.run()
