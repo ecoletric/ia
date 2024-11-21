@@ -17,53 +17,46 @@ app = Flask(__name__)
 # Configurar o logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-if start_ia:
 # Carregar os modelos treinados e os scalers
-    try:
-        with open('energia_eolica_model.pkl', 'rb') as file:
-            energia_eolica_model = pickle.load(file)
-        logger.info("Modelo treinado carregado com sucesso.")
-    except FileNotFoundError:
-        logger.error("Arquivo 'energia_eolica_model.pkl' não encontrado.")
-        energia_eolica_model = None
-    except Exception as e:
-        logger.error(f"Erro ao carregar 'energia_eolica_model.pkl': {e}")
-        energia_eolica_model = None
-
-    try:
-        with open('scaler_eolica.pkl', 'rb') as file:
-            scaler = pickle.load(file)
-        logger.info("Scaler carregado com sucesso.")
-    except FileNotFoundError:
-        logger.error("Arquivo 'scaler_eolica.pkl' não encontrado.")
-        scaler = None
-    except Exception as e:
-        logger.error(f"Erro ao carregar 'scaler_eolica.pkl': {e}")
-        scaler = None
-
-    try:
-        with open('scaler_y.pkl', 'rb') as file:
-            scaler_y = pickle.load(file)
-        logger.info("Scaler para y carregado com sucesso.")
-    except FileNotFoundError:
-        logger.error("Arquivo 'scaler_y.pkl' não encontrado.")
-        scaler_y = None
-    except Exception as e:
-        logger.error(f"Erro ao carregar 'scaler_y.pkl': {e}")
-        scaler_y = None
-
-
-    try:
-        with open('modelo_solar.pkl', 'rb') as file:
-            solar_prediction_model = pickle.load(file)
-    except FileNotFoundError:
-        logger.error("Arquivo 'modelo_solar.pkl' não encontrado.")    
-
-
-    # Verificar se todos os componentes foram carregados corretamente
-    if not energia_eolica_model or not scaler or not scaler_y:
-        logger.error("Modelo ou scalers não carregados corretamente.")
-        # Dependendo do caso, você pode querer encerrar a aplicação ou lidar com isso de outra forma
+try:
+    with open('modelos/energia_eolica_model.pkl', 'rb') as file:
+        energia_eolica_model = pickle.load(file)
+    logger.info("Modelo treinado carregado com sucesso.")
+except FileNotFoundError:
+    logger.error("Arquivo 'energia_eolica_model.pkl' não encontrado.")
+    energia_eolica_model = None
+except Exception as e:
+    logger.error(f"Erro ao carregar 'energia_eolica_model.pkl': {e}")
+    energia_eolica_model = None
+try:
+    with open('modelos/scaler_eolica.pkl', 'rb') as file:
+        scaler = pickle.load(file)
+    logger.info("Scaler carregado com sucesso.")
+except FileNotFoundError:
+    logger.error("Arquivo 'scaler_eolica.pkl' não encontrado.")
+    scaler = None
+except Exception as e:
+    logger.error(f"Erro ao carregar 'scaler_eolica.pkl': {e}")
+    scaler = None
+try:
+    with open('modelos/scaler_y.pkl', 'rb') as file:
+        scaler_y = pickle.load(file)
+    logger.info("Scaler para y carregado com sucesso.")
+except FileNotFoundError:
+    logger.error("Arquivo 'scaler_y.pkl' não encontrado.")
+    scaler_y = None
+except Exception as e:
+    logger.error(f"Erro ao carregar 'scaler_y.pkl': {e}")
+    scaler_y = None
+try:
+    with open('modelos/modelo_solar.pkl', 'rb') as file:
+        solar_prediction_model = pickle.load(file)
+except FileNotFoundError:
+    logger.error("Arquivo 'modelo_solar.pkl' não encontrado.")    
+# Verificar se todos os componentes foram carregados corretamente
+if not energia_eolica_model or not scaler or not scaler_y:
+    logger.error("Modelo ou scalers não carregados corretamente.")
+    # Dependendo do caso, você pode querer encerrar a aplicação ou lidar com isso de outra forma
 
 # Definir os nomes das features utilizadas no treinamento do modelo eólico
 feature_names = [
@@ -183,41 +176,37 @@ def get_connection():
 
 # Função para obter endereço a partir do id_sitio
 def get_endereco(id_sitio):
-    connection = get_connection()
-    if not connection:
-        return {"error": "Não foi possível conectar ao banco de dados"}, 500
-
     try:
-        with connection.cursor() as cur:
-            # Consulta para obter id_endereco
-            cur.execute(
-                "SELECT id_endereco FROM t_gl_sitio WHERE id_sitio = :id_sitio", 
-                {"id_sitio": id_sitio}
-            )
-            result = cur.fetchone()
-            if not result:
-                logger.error(f"id_sitio {id_sitio} não encontrado.")
-                return {"error": "id_sitio não encontrado"}, 404
-            id_endereco = result[0]
-
-        with connection.cursor() as cur:
-            # Consulta para obter cidade e uf
-            cur.execute(
-                "SELECT cidade, uf FROM t_gl_endereco WHERE id_endereco = :id_endereco", 
-                {"id_endereco": id_endereco}
-            )
-            result = cur.fetchone()
-            if not result:
-                logger.error(f"id_endereco {id_endereco} não encontrado.")
-                return {"error": "id_endereco não encontrado"}, 404
-            cidade, uf = result
+        with get_connection() as con:
+            with con.cursor() as cur:
+                # Consulta para obter id_endereco
+                cur.execute(
+                    "SELECT id_endereco FROM t_gl_sitio WHERE id_sitio = :id_sitio", 
+                    {"id_sitio": id_sitio}
+                )
+                result = cur.fetchone()
+                if not result:
+                    logger.error(f"id_sitio {id_sitio} não encontrado.")
+                    return {"error": "id_sitio não encontrado"}, 404
+                id_endereco = result[0]
+        with get_connection() as con:
+            with con.cursor() as cur:
+                # Consulta para obter cidade e uf
+                cur.execute(
+                    "SELECT cidade, uf FROM t_gl_endereco WHERE id_endereco = :id_endereco", 
+                    {"id_endereco": id_endereco}
+                )
+                result = cur.fetchone()
+                if not result:
+                    logger.error(f"id_endereco {id_endereco} não encontrado.")
+                    return {"error": "id_endereco não encontrado"}, 404
+                cidade, uf = result
 
         return {"cidade": cidade, "uf": uf}
     except oracledb.Error as e:
         logger.error(f"Erro ao consultar o banco de dados: {e}")
         return {"error": "Erro interno no banco de dados"}, 500
-    finally:
-        connection.close()
+   
 
 
 
@@ -281,15 +270,20 @@ def somar_capacidade_usina(id_sitio : int):
             if not result:
                 logger.error(f"capacidade da usina no sítio {id_sitio} não encontrada.")
                 return {"error": "id_endereco não encontrado"}, 404
-    return result
+    return result[0]
 
 
 
-@app.route('/predict-solar/<int:id_sitio>', methods=['POST'])
+@app.route('/predict-solar/<int:id_sitio>', methods=['GET'])
 def prever_solar_sitio(id_sitio: int):
     from energia_solar2 import predict_solar_daily_energy
-    cidade, uf =  get_endereco(id_sitio=id_sitio)
+    resultado = get_endereco(id_sitio=id_sitio)
+    cidade = resultado.get('cidade')
+    uf = resultado.get('uf')
+    print(cidade)
+    print(uf)
     estado = uf_estado(uf)
+    print(estado)
 
     resultado = predict_solar_daily_energy(cidade=cidade, estado=estado, usina_capacidade=somar_capacidade_usina(id_sitio))
    
@@ -412,6 +406,7 @@ def prever_eolica_sitio(id_sitio: int):
         return jsonify({"error": "Erro ao desescalonar a previsão."}), 500
 
     # Arredondar o valor
+    potencia = somar_capacidade_usina(id_sitio)
     predicted_power_rounded = float(predicted_power_original[0][0])
     if predicted_power_rounded is None:
         logger.error("Erro ao arredondar a previsão.")
@@ -420,7 +415,9 @@ def prever_eolica_sitio(id_sitio: int):
     logger.info(f"Previsão concluída: {predicted_power_rounded}")
     return jsonify({
         'id_sitio': id_sitio,
-        'predicted_power': predicted_power_rounded
+        'predicted_power': predicted_power_rounded,
+        'potencia' : potencia,
+        'energia_eolica' : potencia * predicted_power_rounded
     })
 
 @app.route('/cidade/', methods=['POST'])

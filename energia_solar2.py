@@ -150,13 +150,13 @@ def gerar_modelo_solar():
     print(f"Test MAE: {evaluation[1]}")
 
     # Salvar o modelo e os scalers
-    with open('energia_solar_model.pkl', 'wb') as model_file:
+    with open('modelos/energia_solar_model.pkl', 'wb') as model_file:
         pickle.dump(model, model_file)
 
-    with open('scaler_solar_X.pkl', 'wb') as scaler_file:
+    with open('modelos/scaler_solar_X.pkl', 'wb') as scaler_file:
         pickle.dump(scaler_X, scaler_file)
 
-    with open('scaler_solar_y.pkl', 'wb') as scaler_file:
+    with open('modelos/scaler_solar_y.pkl', 'wb') as scaler_file:
         pickle.dump(scaler_y, scaler_file)
 
     print("Modelo e scalers salvos com sucesso.")
@@ -166,11 +166,11 @@ def predict_solar_daily_energy(cidade, estado, usina_capacidade=1000, lag=24):
     features = ['AMBIENT_TEMPERATURE', 'MODULE_TEMPERATURE', 'IRRADIATION']
 
     # Carregar o modelo e os scalers
-    with open('energia_solar_model.pkl', 'rb') as model_file:
+    with open('modelos/energia_solar_model.pkl', 'rb') as model_file:
         model = pickle.load(model_file)
-    with open('scaler_solar_X.pkl', 'rb') as scaler_file:
+    with open('modelos/scaler_solar_X.pkl', 'rb') as scaler_file:
         scaler_X = pickle.load(scaler_file)
-    with open('scaler_solar_y.pkl', 'rb') as scaler_file:
+    with open('modelos/scaler_solar_y.pkl', 'rb') as scaler_file:
         scaler_y = pickle.load(scaler_file)
 
     # Obter as condições solares

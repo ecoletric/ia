@@ -138,13 +138,13 @@ print(f"Test Loss (MSE): {evaluation[0]}")
 print(f"Test MAE: {evaluation[1]}")
 
 # Salvar o modelo treinado e os scalers específicos para energia eólica
-with open('energia_eolica_model.pkl', 'wb') as model_file:
+with open('modelos/energia_eolica_model.pkl', 'wb') as model_file:
     pickle.dump(model, model_file)
 
-with open('scaler_eolica.pkl', 'wb') as scaler_file:
+with open('modelos/scaler_eolica.pkl', 'wb') as scaler_file:
     pickle.dump(scaler_X, scaler_file)
 
-with open('scaler_y.pkl', 'wb') as scaler_y_file:
+with open('modelos/scaler_y.pkl', 'wb') as scaler_y_file:
     pickle.dump(scaler_y, scaler_y_file)
 
 print("Model, scaler_X, and scaler_y saved successfully.")
