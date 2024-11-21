@@ -8,7 +8,6 @@ import oracledb
 import numpy as np
 import unicodedata
 import logging
-from sklearn.preprocessing import MinMaxScaler
 import datetime
 
 
