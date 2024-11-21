@@ -9,16 +9,6 @@ from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Função para converter km/h para m/s
-def kmh_para_ms(velocidade_kmh):
-    """Converte a velocidade de km/h para m/s."""
-    return velocidade_kmh / 3.6
-
-# Função para estimar a velocidade do vento/rajada a uma altura diferente
-def estimar_velocidade_rajada_vento(x_ms, h1=10, h2=100, alpha=0.14):
-    """Estima a velocidade do vento/rajada a uma altura diferente usando a Lei do Poder."""
-    return x_ms * (h2 / h1) ** alpha
-
 # Função para preparar dados com lag
 def df_to_Xy(X_scaled, y, lag):
     X, y_lag = [], []
