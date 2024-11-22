@@ -518,8 +518,9 @@ def prever_solar_sitio(id_sitio: int):
     print(uf)
     estado = uf_estado(uf)
     print(estado)
+    capacidade_sitio = somar_capacidade_usina(id_sitio)
 
-    resultado = predict_solar_daily_energy(cidade=cidade, estado=estado, usina_capacidade=somar_capacidade_usina(id_sitio))
+    resultado = predict_solar_daily_energy(cidade=cidade, estado=estado, usina_capacidade=capacidade_sitio)
    
     # Retornar a previsão como JSON
     return jsonify({'energia_diaria_estimada': resultado})
